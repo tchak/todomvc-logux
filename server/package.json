@@ -1,0 +1,13 @@
+{
+  "name": "server-logux",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@logux/server": "logux/server#master",
+    "nedb": "^1.8.0"
+  }
+}
