@@ -7,6 +7,8 @@
     "react-test-renderer": "^16.8.6"
   },
   "dependencies": {
+    "@logux/client": "^0.3.4",
+    "@logux/redux": "^0.2.9",
     "classnames": "^2.2.6",
     "prop-types": "^15.7.2",
     "react": "^16.8.6",
