@@ -11,3 +11,4 @@ build
 npm-debug.log
 
 server/db/
+client-redux
