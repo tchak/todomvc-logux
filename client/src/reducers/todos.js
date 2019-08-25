@@ -20,7 +20,7 @@ export default function todos(state = [], action) {
           completed: !!action.completed,
           text: action.text
         }
-      ]
+      ].sort(sortBy('id'))
 
     case DELETE_TODO:
       return state.filter(todo =>
@@ -53,5 +53,17 @@ export default function todos(state = [], action) {
 
     default:
       return state
+  }
+}
+
+function sortBy(key) {
+  return (a, b) => {
+    if (a[key] < b[key]) {
+      return -1;
+    }
+    if (a[key] > b[key]) {
+      return 1;
+    }
+    return 0;
   }
 }

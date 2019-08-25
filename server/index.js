@@ -15,11 +15,12 @@ const db = new Datastore({ filename: 'db/test.db', autoload: true });
 const todos = new Todos(db);
 
 function sendBackTodo(ctx, todo) {
-  if (todo) {
-    const { id, text, completed } = todo;
-    ctx.sendBack({ type: 'ADD_TODO', id, text, completed });
-  } else {
+  const { id } = todo;
+  if (todo.meta.deleted) {
     ctx.sendBack({ type: 'DELETE_TODO', id });
+  } else {
+    const { text, completed } = todo;
+    ctx.sendBack({ type: 'ADD_TODO', id, text, completed });
   }
 }
 
@@ -39,26 +40,15 @@ server.channel('todos', {
   }
 });
 
-server.channel('todo/:id', {
-  access(ctx, action, meta) {
-    return true;
-  },
-  async init(ctx, action, meta) {
-    const todo = await todos.find(ctx.params.id);
-    sendBackTodo(ctx, todo);
-  }
-});
-
-let lastAdd;
 server.type('ADD_TODO', {
   access(ctx, action, meta) {
     return true;
   },
   resend(ctx, action, meta) {
-    return { channels: ['todos', `todo/${action.id}`] };
+    return { channel: 'todos' };
   },
   async process(ctx, action, meta) {
-    await todos.add(action.id, action.text);
+    await todos.addTodo(action.id, action.text, meta);
   }
 });
 
@@ -67,10 +57,10 @@ server.type('EDIT_TODO', {
     return true;
   },
   resend(ctx, action, meta) {
-    return { channels: ['todos', `todo/${action.id}`] };
+    return { channel: 'todos' };
   },
   async process(ctx, action, meta) {
-    await todos.update(action.id, action.text);
+    await todos.editTodo(action.id, action.text, meta);
   }
 });
 
@@ -79,10 +69,10 @@ server.type('DELETE_TODO', {
     return true;
   },
   resend(ctx, action, meta) {
-    return { channels: ['todos', `todo/${action.id}`] };
+    return { channel: 'todos' };
   },
   async process(ctx, action, meta) {
-    await todos.remove(action.id);
+    await todos.removeTodo(action.id, meta);
   }
 });
 
@@ -91,10 +81,10 @@ server.type('COMPLETE_TODO', {
     return true;
   },
   resend(ctx, action, meta) {
-    return { channels: ['todos', `todo/${action.id}`] };
+    return { channel: 'todos' };
   },
   async process(ctx, action, meta) {
-    await todos.toggle(action.id);
+    await todos.toggleTodo(action.id, meta);
   }
 });
 
@@ -103,10 +93,10 @@ server.type('CLEAR_COMPLETED', {
     return true;
   },
   resend(ctx, action, meta) {
-    return { channels: ['todos', `todo/${action.id}`] };
+    return { channel: 'todos' };
   },
   async process(ctx, action, meta) {
-    await todos.clear();
+    await todos.clearCompleted(meta);
   }
 });
 

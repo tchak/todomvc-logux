@@ -1,17 +1,19 @@
+const isFirstOlder = require('@logux/core/is-first-older');
+
 class Todos {
   constructor(db) {
     this.db = db;
   }
 
-  async add(id, text) {
+  async addTodo(id, text, meta) {
     const todo = await this.find(id);
     if (todo) {
-      return todo;
+      return { id };
     }
     return new Promise((resolve, reject) => {
-      this.db.insert([ { _id: id, text }], (err) => {
+      this.db.insert([ { _id: id, text, meta }], (err) => {
         if (!err) {
-          resolve({ id, text });
+          resolve(true);
         } else {
           reject(err);
         }
@@ -19,50 +21,27 @@ class Todos {
     });
   }
 
-  update(id, text) {
-    return new Promise((resolve, reject) => {
-      this.db.update({ _id: id }, { $set: { text } }, (err) => {
-        if (!err) {
-          resolve({ id, text });
-        } else {
-          reject(err);
-        }
-      });
-    });
+  async editTodo(id, text, meta) {
+    await this.update(id, { text }, meta);
   }
 
-  async toggle(id) {
+  async toggleTodo(id, meta) {
     const todo = await this.find(id);
     const completed = !todo.completed;
-
-    return new Promise((resolve, reject) => {
-      this.db.update({ _id: id }, { $set: { completed } }, (err) => {
-        if (!err) {
-          resolve({ id, completed });
-        } else {
-          reject(err);
-        }
-      });
-    });
+    return this.update(id, { completed }, meta);
   }
 
-  clear() {
-    return new Promise((resolve, reject) => {
-      this.db.remove({ completed: true }, { multi: true }, (err) => {
-        if (!err) {
-          resolve();
-        } else {
-          reject(err);
-        }
-      });
-    });
+  async removeTodo(id, meta) {
+    meta.deleted = Date.now();
+    await this.update(id, {}, meta);
   }
 
-  remove(id) {
+  async clearCompleted(meta) {
     return new Promise((resolve, reject) => {
-      this.db.remove({ _id: id }, {}, (err) => {
+      meta.deleted = Date.now();
+      this.db.update({ completed: true }, { $set: { meta } }, (err) => {
         if (!err) {
-          resolve();
+          resolve(true);
         } else {
           reject(err);
         }
@@ -86,10 +65,10 @@ class Todos {
     return new Promise((resolve, reject) => {
       this.db.findOne({ _id: id }, (err, doc) => {
         if (!err) {
-          if (doc) {
-            resolve(normalize(doc));
-          } else {
+          if (!doc || doc.meta.deleted) {
             resolve(null);
+          } else {
+            resolve(normalize(doc));
           }
         } else {
           reject(err);
@@ -97,13 +76,29 @@ class Todos {
       });
     });
   }
+
+  async update(id, attributes, meta) {
+    const todo = await this.find(id);
+    if (isFirstOlder(todo && todo.meta, meta)) {
+      return new Promise((resolve, reject) => {
+        this.db.update({ _id: id }, { $set: { ...attributes, meta } }, (err) => {
+          if (!err) {
+            resolve(true);
+          } else {
+            reject(err);
+          }
+        });
+      });
+    }
+  }
 }
 
-function normalize({ _id: id, text, completed }) {
+function normalize({ _id: id, text, completed, meta }) {
   return {
     id,
     text,
-    completed
+    completed,
+    meta
   };
 }
 
