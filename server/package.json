@@ -4,7 +4,7 @@
   "private": true,
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "NODE_ENV=development node index.js"
   },
   "dependencies": {
     "@logux/server": "logux/server#master",
